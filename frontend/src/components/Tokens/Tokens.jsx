@@ -39,6 +39,7 @@ export class Tokens extends React.Component {
     this.lsKeySortedBy = this.lsKey + 'sortedBy';
     this.balances = {};
 
+
     this.state = {
       tokens: [...this.tokens],
       prices: {},
