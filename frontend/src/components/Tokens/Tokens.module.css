@@ -1,0 +1,12 @@
+.searchBlock {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.paginationBlock{
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
