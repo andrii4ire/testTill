@@ -496,7 +496,7 @@ class App extends React.Component {
     ) : (
         <div>
           <button
-              className="btn btn-primary"
+              className="btn btn-primary background-color-blue"
               onClick={() => this.requestSignIn()}>Log in with NEAR Wallet to create a new Token</button>
         </div>
     ));

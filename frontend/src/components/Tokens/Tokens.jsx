@@ -1,15 +1,12 @@
 import React from 'react';
-import { useTable } from 'react-table'
-import BTable from 'react-bootstrap/Table';
 import DefaultTokenIcon from '../../default-token.png';
 import Big from 'big.js';
 import ls from "local-storage";
 import * as nearAPI from 'near-api-js';
 import {Table} from "./Table/Table";
 import styles from './Tokens.module.css';
-import SearchBar from "../elements/SearchBar/SeachBar";
-import {Pagination} from "react-bootstrap";
-
+import SearchBar from "../elements/SearchBar";
+import PaginationBox from "../elements/PaginationBox";
 export const ContractName = 'tkn.near';
 const SimplePool = 'SIMPLE_POOL';
 const RefContractId = 'ref-finance.near';
@@ -130,6 +127,7 @@ export class Tokens extends React.Component {
     ];
     this._initialized = false;
     this.handleSearch = this.handleSearch.bind(this);
+    this.handlePage = this.handlePage.bind(this);
   }
 
   async refRegisterToken(tokenId) {
@@ -285,7 +283,7 @@ export class Tokens extends React.Component {
 
   async refreshRefBalances() {
     if (this._accountId) {
-      const balances = await this._refContract.get_deposits({account_id: this._accountId});
+      const balances = 0;
       Object.keys(balances).forEach((key) => {
         balances[key] = Big(balances[key]);
       });
@@ -307,7 +305,7 @@ export class Tokens extends React.Component {
   }
 
   async refreshRefPools() {
-    const numPools = await this._refContract.get_number_of_pools();
+    const numPools = 0;
     const promises = [];
     const limit = 100;
     for (let i = 0; i < numPools; i += limit) {
@@ -401,53 +399,45 @@ export class Tokens extends React.Component {
 
           if (coinName.includes(this.state.searchText.toLowerCase())) {
               return item
+          } else {
+            return null;
           }
       })
   }
 
-  createPageArr(dataFiltered) {
-      let pages = [];
-      const totalPages = Math.ceil(dataFiltered.length / rowsPerPage);
-
-      for (let i = 0; i < totalPages; i++) {
-          pages.push(i + 1)
-      }
-
-      return pages;
+  handlePage(page) {
+      this.setState({ currentPage: page })
   }
-
 
   render() {
     const columns = this.columns;
     const data = this.state.tokens;
     const dataFiltered = this.filterData(data);
 
-    const pages = this.createPageArr(dataFiltered)
-
     const lastPageIndex = this.state.currentPage * rowsPerPage;
     const firstPageIndex = lastPageIndex - rowsPerPage;
     const currentData = dataFiltered.slice(firstPageIndex, lastPageIndex);
 
     return (
-      <div>
+      <div className={ styles.root }>
         <div className="mb-3">
           Sort by
           <div className="btn-group ml-2" role="group" aria-label="Sorted By">
             <button
               type="button"
-              className={`btn ${this.state.sortedBy === SortedByLiquidity ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              className={`btn ${this.state.sortedBy === SortedByLiquidity ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
               onClick={() => this.setState({sortedBy: SortedByLiquidity}, () => this.updateTokens())}
             >Liquidity</button>
             { this.props.isSignedIn && <button
                 type="button"
-                className={`btn ${this.state.sortedBy === SortedByYourTokens ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                className={`btn ${this.state.sortedBy === SortedByYourTokens ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
                 onClick={() => this.setState({sortedBy: SortedByYourTokens}, () => this.updateTokens())}
             >
               Your tokens
             </button> }
             <button
               type="button"
-              className={`btn ${this.state.sortedBy === SortedByIndex ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              className={`btn ${this.state.sortedBy === SortedByIndex ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
               onClick={() => this.setState({sortedBy: SortedByIndex}, () => this.updateTokens())}
             >Index</button>
           </div>
@@ -464,32 +454,12 @@ export class Tokens extends React.Component {
             <Table columns={ columns } data={ currentData } />
         </div>
         <div className={ styles.paginationBlock }>
-            <Pagination>
-                <Pagination.First onClick={ () => { this.setState({ currentPage: 1  }) }}/>
-                <Pagination.Prev onClick={ () => {
-                    this.setState({
-                        currentPage: this.state.currentPage > 1
-                            ? this.state.currentPage - 1
-                            : this.state.currentPage })
-                }}/>
-
-                { pages.map( item => {
-                    return <Pagination.Item
-                        onClick={ () => { this.setState({ currentPage: item  }) }}
-                        active={ item === this.state.currentPage }
-                    >
-                        { item }
-                    </Pagination.Item>
-                })}
-
-                <Pagination.Next onClick={ () => {
-                    this.setState({
-                        currentPage: this.state.currentPage < pages.length
-                            ? this.state.currentPage + 1
-                            : this.state.currentPage })
-                }}/>
-                <Pagination.Last onClick={ () => { this.setState({ currentPage: pages.length  }) }}/>
-            </Pagination>
+            <PaginationBox
+                handlePage={ this.handlePage }
+                rowsPerPage={ rowsPerPage }
+                dataLength={ dataFiltered.length }
+                currentPage={ this.state.currentPage }
+            />
         </div>
       </div>
     );
