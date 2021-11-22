@@ -425,19 +425,19 @@ export class Tokens extends React.Component {
           <div className="btn-group ml-2" role="group" aria-label="Sorted By">
             <button
               type="button"
-              className={`btn ${this.state.sortedBy === SortedByLiquidity ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              className={`btn ${this.state.sortedBy === SortedByLiquidity ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
               onClick={() => this.setState({sortedBy: SortedByLiquidity}, () => this.updateTokens())}
             >Liquidity</button>
             { this.props.isSignedIn && <button
                 type="button"
-                className={`btn ${this.state.sortedBy === SortedByYourTokens ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                className={`btn ${this.state.sortedBy === SortedByYourTokens ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
                 onClick={() => this.setState({sortedBy: SortedByYourTokens}, () => this.updateTokens())}
             >
               Your tokens
             </button> }
             <button
               type="button"
-              className={`btn ${this.state.sortedBy === SortedByIndex ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              className={`btn ${this.state.sortedBy === SortedByIndex ? 'btn-secondary background-color-grey' : 'btn-outline-secondary'}`}
               onClick={() => this.setState({sortedBy: SortedByIndex}, () => this.updateTokens())}
             >Index</button>
           </div>
