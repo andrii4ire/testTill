@@ -5,7 +5,7 @@ import ls from "local-storage";
 import * as nearAPI from 'near-api-js';
 import {Table} from "./Table/Table";
 import styles from './Tokens.module.css';
-import SearchBar from "../elements/SearchBar/SeachBar";
+import SearchBar from "../elements/SearchBar";
 import PaginationBox from "../elements/PaginationBox";
 export const ContractName = 'tkn.near';
 const SimplePool = 'SIMPLE_POOL';
@@ -406,7 +406,7 @@ export class Tokens extends React.Component {
   }
 
   handlePage(page) {
-    this.setState({ currentPage: page })
+      this.setState({ currentPage: page })
   }
 
   render() {
