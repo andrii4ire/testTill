@@ -1,12 +1,18 @@
 import React from "react";
 import styles from './Switcher.module.css';
 
-const Switcher = () => {
+const Switcher = ({ name = '', onChange, checked = false }) => {
 
     return (
-        <div className={ styles.root }>
-
-        </div>
+        <label className={ styles.switch }>
+            <input
+                type="checkbox"
+                name={ name }
+                onChange={ onChange }
+                checked={ checked }
+            />
+            <span className={ styles.slider } />
+        </label>
     )
 }
 

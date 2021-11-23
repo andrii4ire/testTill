@@ -1,0 +1,9 @@
+.root {
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    border: none;
+}
+
+.root:hover {
+    box-shadow: 0 0 20px 0 black;
+}

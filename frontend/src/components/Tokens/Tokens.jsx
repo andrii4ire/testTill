@@ -7,6 +7,7 @@ import {Table} from "./Table/Table";
 import styles from './Tokens.module.css';
 import SearchBar from "../elements/SearchBar";
 import PaginationBox from "../elements/PaginationBox";
+import {AppConsumer} from "../../context/AppContext";
 export const ContractName = 'tkn.near';
 const SimplePool = 'SIMPLE_POOL';
 const RefContractId = 'ref-finance.near';
@@ -28,7 +29,7 @@ const ot = (pool, token) => (token in pool.tokens) ? pool.tt[1 - pool.tt.indexOf
 
 export const toTokenAccountId = (tokenId) => `${tokenId.toLowerCase()}.${ContractName}`;
 
-export class Tokens extends React.Component {
+class Tokens extends React.Component {
   constructor(props) {
     super(props);
     this.tokens = ls.get(props.lsKeyCachedTokens) || [];
@@ -420,6 +421,11 @@ export class Tokens extends React.Component {
 
     return (
       <div className={ styles.root }>
+        {/*<AppConsumer>
+            { isDarkMode => {
+                console.log(isDarkMode)
+            }}
+        </AppConsumer>*/}
         <div className="mb-3">
           Sort by
           <div className="btn-group ml-2" role="group" aria-label="Sorted By">
@@ -465,3 +471,5 @@ export class Tokens extends React.Component {
     );
   }
 }
+
+export default React.memo(Tokens);

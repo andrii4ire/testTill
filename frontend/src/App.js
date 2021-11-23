@@ -2,9 +2,13 @@ import "./App.css";
 import React from 'react';
 import * as nearAPI from 'near-api-js';
 import Files from "react-files";
-import { BoatOfGas, OneNear, Tokens, ContractName } from './components/Tokens/Tokens.jsx';
+import { BoatOfGas, OneNear, ContractName } from './components/Tokens/Tokens.jsx';
 import Big from 'big.js';
 import ls from "local-storage";
+import Button from "./components/elements/Button";
+import Switcher from "./components/elements/Switcher";
+import { AppProvider } from "./context/AppContext";
+import Tokens from "./components/Tokens";
 
 const UploadResizeWidth = 96;
 const UploadResizeHeight = 96;
@@ -19,43 +23,45 @@ const fromYocto = (a) => a && Big(a).div(OneNear).toFixed(6);
 
 class App extends React.Component {
   constructor(props) {
-    super(props);
+      super(props);
 
-    this.lsKey = ContractName + ':v02:';
-    this.lsKeyToken = this.lsKey + "token";
-    this.lsKeyCachedTokens = this.lsKey + "cachedTokens";
-    this.lsKeyCreateToken = this.lsKey + "createToken";
-    this._updateRequiredDeposit = null;
+      this.lsKey = ContractName + ':v02:';
+      this.lsKeyToken = this.lsKey + "token";
+      this.lsKeyCachedTokens = this.lsKey + "cachedTokens";
+      this.lsKeyCreateToken = this.lsKey + "createToken";
+      this._updateRequiredDeposit = null;
+      this.handleCheck = this.handleCheck.bind(this);
 
-    this.state = {
-      connected: false,
-      signedIn: false,
-      creating: false,
-      accountId: null,
-      tokenLoading: false,
-      tokenAlreadyExists: false,
-      readyForWalletWhitelist: false,
-      expandCreateToken: false,
+      this.state = {
+          connected: false,
+          signedIn: false,
+          creating: false,
+          accountId: null,
+          tokenLoading: false,
+          tokenAlreadyExists: false,
+          readyForWalletWhitelist: false,
+          expandCreateToken: false,
 
-      accountLoading: false,
-      accountExists: true,
+          accountLoading: false,
+          accountExists: true,
 
-      tokenId: "",
-      totalSupply: Big("1000000000"),
-      tokenDecimals: 18,
-      tokenName: "",
-      tokenIconBase64: null,
-      requiredDeposit: null,
-    };
+          tokenId: "",
+          totalSupply: Big("1000000000"),
+          tokenDecimals: 18,
+          tokenName: "",
+          tokenIconBase64: null,
+          requiredDeposit: null,
+          isDarkMode: false
+      };
 
-    this._initNear().then(() => {
-      this.setState({
-        connected: true,
-        signedIn: !!this._accountId,
-        accountId: this._accountId,
-        ownerId: this._ownerId,
+      this._initNear().then(() => {
+          this.setState({
+              connected: true,
+              signedIn: !!this._accountId,
+              accountId: this._accountId,
+              ownerId: this._ownerId,
+          })
       })
-    })
   }
 
   async _initYourToken() {
@@ -98,69 +104,68 @@ class App extends React.Component {
   }
 
   constructArgs() {
-    return {
-      owner_id: this._accountId,
-      total_supply: this.state.totalSupply.mul(Big(10).pow(this.state.tokenDecimals)).round(0, 0).toFixed(0),
-      metadata: {
-        spec: "ft-1.0.0",
-        name: this.state.tokenName,
-        symbol: this.state.tokenId,
-        icon: this.state.tokenIconBase64,
-        decimals: this.state.tokenDecimals,
+      return {
+          owner_id: this._accountId,
+          total_supply: this.state.totalSupply.mul(Big(10).pow(this.state.tokenDecimals)).round(0, 0).toFixed(0),
+          metadata: {
+              spec: "ft-1.0.0",
+              name: this.state.tokenName,
+              symbol: this.state.tokenId,
+              icon: this.state.tokenIconBase64,
+              decimals: this.state.tokenDecimals,
+          }
       }
-    }
   }
 
   async internalUpdateRequiredDeposit() {
-    if (this._accountId) {
-      const requiredDeposit = await this.computeRequiredDeposit();
-      if (!requiredDeposit || requiredDeposit !== this.state.requiredDeposit) {
-        this.setState({
-          requiredDeposit
-        })
+      if (this._accountId) {
+          const requiredDeposit = await this.computeRequiredDeposit();
+          if (!requiredDeposit || requiredDeposit !== this.state.requiredDeposit) {
+              this.setState({
+                  requiredDeposit
+              })
+          }
       }
-    }
   }
 
   updateRequiredDeposit() {
-    if (this._updateRequiredDeposit) {
-      clearTimeout(this._updateRequiredDeposit);
-      this._updateRequiredDeposit = null;
-    }
-    this._updateRequiredDeposit = setTimeout(() => this.internalUpdateRequiredDeposit(), 250);
+      if (this._updateRequiredDeposit) {
+          clearTimeout(this._updateRequiredDeposit);
+          this._updateRequiredDeposit = null;
+      }
+      this._updateRequiredDeposit = setTimeout(() => this.internalUpdateRequiredDeposit(), 250);
   }
 
   async computeRequiredDeposit(args) {
-    args = args || this.constructArgs();
-    return Big(await this._contract.get_required_deposit({
-      args, account_id: this._accountId
-    }))
+      args = args || this.constructArgs();
+      return Big(await this._contract.get_required_deposit({
+          args, account_id: this._accountId
+      }))
   }
 
   async _initNear() {
-    const nearConfig = {
-      networkId: 'mainnet',
-      nodeUrl: 'https://rpc.mainnet.near.org',
-      contractName: ContractName,
-      walletUrl: 'https://wallet.near.org',
-    };
-    const keyStore = new nearAPI.keyStores.BrowserLocalStorageKeyStore();
-    const near = await nearAPI.connect(Object.assign({ deps: { keyStore } }, nearConfig));
-    this._keyStore = keyStore;
-    this._nearConfig = nearConfig;
-    this._near = near;
+      const nearConfig = {
+          networkId: 'mainnet',
+          nodeUrl: 'https://rpc.mainnet.near.org',
+          contractName: ContractName,
+          walletUrl: 'https://wallet.near.org',
+      };
+      const keyStore = new nearAPI.keyStores.BrowserLocalStorageKeyStore();
+      const near = await nearAPI.connect(Object.assign({ deps: { keyStore } }, nearConfig));
+      this._keyStore = keyStore;
+      this._nearConfig = nearConfig;
+      this._near = near;
 
-    this._walletConnection = new nearAPI.WalletConnection(near, ContractName);
-    this._accountId = this._walletConnection.getAccountId();
-    this._ownerId = this._accountId;
+      this._walletConnection = new nearAPI.WalletConnection(near, ContractName);
+      this._accountId = this._walletConnection.getAccountId();
+      this._ownerId = this._accountId;
 
-    this._account = this._walletConnection.account();
-    this._contract = new nearAPI.Contract(this._account, ContractName, {
-      viewMethods: ['get_required_deposit', 'get_number_of_tokens', 'get_tokens', 'get_token'],
-      changeMethods: ['create_token', 'storage_deposit'],
-    });
-    await this._initYourToken();
-
+      this._account = this._walletConnection.account();
+      this._contract = new nearAPI.Contract(this._account, ContractName, {
+        viewMethods: ['get_required_deposit', 'get_number_of_tokens', 'get_tokens', 'get_token'],
+        changeMethods: ['create_token', 'storage_deposit'],
+      });
+      await this._initYourToken();
   }
 
   handleChange(key, value) {
@@ -229,51 +234,51 @@ class App extends React.Component {
   }
 
   isValidAccountId(accountId) {
-    return accountId.length >= MinAccountIdLen &&
-      accountId.length <= MaxAccountIdLen &&
-      accountId.match(ValidAccountRe);
+      return accountId.length >= MinAccountIdLen &&
+          accountId.length <= MaxAccountIdLen &&
+          accountId.match(ValidAccountRe);
   }
 
   isValidTokenId(tokenId) {
-    tokenId = tokenId.toLowerCase();
-    return tokenId.match(ValidTokenIdRe) && this.isValidAccountId(tokenId + '.' + ContractName);
+      tokenId = tokenId.toLowerCase();
+      return tokenId.match(ValidTokenIdRe) && this.isValidAccountId(tokenId + '.' + ContractName);
   }
 
   tokenIdClass() {
-    if (!this.state.tokenId || (this.isValidTokenId(this.state.tokenId) && this.state.tokenLoading)) {
-      return "form-control form-control-large";
-    } else if (this.isValidTokenId(this.state.tokenId) && !this.state.tokenAlreadyExists) {
-      return "form-control form-control-large is-valid";
-    } else {
-      return "form-control form-control-large is-invalid";
-    }
+      if (!this.state.tokenId || (this.isValidTokenId(this.state.tokenId) && this.state.tokenLoading)) {
+          return "form-control form-control-large";
+      } else if (this.isValidTokenId(this.state.tokenId) && !this.state.tokenAlreadyExists) {
+          return "form-control form-control-large is-valid";
+      } else {
+          return "form-control form-control-large is-invalid";
+      }
   }
 
   ownerIdClass() {
-    if (!this.state.ownerId || (this.isValidAccountId(this.state.ownerId) && this.state.accountLoading)) {
-      return "form-control form-control-large";
-    } else if (this.isValidAccountId(this.state.ownerId) && this.state.accountExists) {
-      return "form-control form-control-large is-valid";
-    } else {
-      return "form-control form-control-large is-invalid";
-    }
+      if (!this.state.ownerId || (this.isValidAccountId(this.state.ownerId) && this.state.accountLoading)) {
+          return "form-control form-control-large";
+      } else if (this.isValidAccountId(this.state.ownerId) && this.state.accountExists) {
+          return "form-control form-control-large is-valid";
+      } else {
+          return "form-control form-control-large is-invalid";
+      }
   }
 
   async requestSignIn() {
-    const appTitle = 'Token Factory';
-    await this._walletConnection.requestSignIn(
-        ContractName,
-        appTitle
-    )
+      const appTitle = 'Token Factory';
+      await this._walletConnection.requestSignIn(
+          ContractName,
+          appTitle
+      )
   }
 
   async logOut() {
-    this._walletConnection.signOut();
-    this._accountId = null;
-    this.setState({
-      signedIn: !!this._accountId,
-      accountId: this._accountId,
-    })
+      this._walletConnection.signOut();
+      this._accountId = null;
+      this.setState({
+          signedIn: !!this._accountId,
+          accountId: this._accountId,
+      })
   }
 
   async onFilesChange(f) {
@@ -316,213 +321,232 @@ class App extends React.Component {
   }
 
   async onFilesError(e, f) {
-    console.log(e, f);
+      console.log(e, f);
   }
 
   async createToken() {
-    this.setState({
-      creating: true,
-    });
-    const args = this.constructArgs();
-    const requiredDeposit = await this.computeRequiredDeposit(args);
-    ls.set(this.lsKeyToken, args);
-    ls.set(this.lsKeyCreateToken, true);
-    await this._contract.storage_deposit({}, BoatOfGas.toFixed(0), requiredDeposit.toFixed(0));
+      this.setState({
+          creating: true,
+      });
+      const args = this.constructArgs();
+      const requiredDeposit = await this.computeRequiredDeposit(args);
+      ls.set(this.lsKeyToken, args);
+      ls.set(this.lsKeyCreateToken, true);
+      await this._contract.storage_deposit({}, BoatOfGas.toFixed(0), requiredDeposit.toFixed(0));
+  }
+
+  handleCheck() {
+      this.setState({ isDarkMode: !this.state.isDarkMode })
   }
 
   render() {
-    const content = !this.state.connected && this.state.creating ? (
-      <div>
-        <div>Creating your token... <span className="spinner-grow spinner-grow-lg" role="status" aria-hidden="true"></span></div>
-      </div>
-    ) : !this.state.connected ? (
-        <div>Connecting... <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span></div>
-    ) : this.state.readyForWalletWhitelist ? (
-      <div>
-        <div className="alert alert-success" role="alert">
-          The token <b>{this.state.tokenId}</b> was successfully created!
-        </div>
-        <div>
-          <button
-            className="btn btn-success"
-            onClick={() => this.requestWhitelist(this.state.tokenId)}>Add <b>{this.state.tokenId}</b> to your NEAR Wallet</button>
-        </div>
-      </div>
-    ) : (this.state.signedIn ? (
-        <div>
-          <div className="float-right">
-            <button
-                className="btn btn-outline-secondary"
-                onClick={() => this.logOut()}>Log out</button>
+      const content = !this.state.connected && this.state.creating ? (
+          <div>
+              <div>Creating your token... <span className="spinner-grow spinner-grow-lg" role="status" aria-hidden="true"></span></div>
           </div>
-          <h4>Hello, <span className="font-weight-bold">{this.state.accountId}</span>!</h4>
-          {this.state.expandCreateToken ? (
-            <div>
-              <p>
-                Issue a new token. It'll cost you <span className="font-weight-bold">{fromYocto(this.state.requiredDeposit)} Ⓝ</span>
-              </p>
-
-              <div className="form-group">
-                <label forhtml="tokenName">Token Name</label>
-                <div className="input-group">
-                  <input type="text"
-                         className="form-control form-control-large"
-                         id="tokenName"
-                         placeholder="Epic Moon Rocket"
-                         disabled={this.state.creating}
-                         value={this.state.tokenName}
-                         onChange={(e) => this.handleChange('tokenName', e.target.value)}
-                  />
-                </div>
-                <small>The token name may be used to display the token in the UI</small>
+      ) : !this.state.connected ? (
+          <div>Connecting... <span className="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span></div>
+      ) : this.state.readyForWalletWhitelist ? (
+          <div>
+              <div className="alert alert-success" role="alert">
+                  The token <b>{ this.state.tokenId }</b> was successfully created!
               </div>
-
-              <div className="form-group">
-                <label forhtml="tokenId">Token Symbol</label>
-                <div className="input-group">
-                  <input type="text"
-                         className={this.tokenIdClass()}
-                         id="tokenId"
-                         placeholder="MOON"
-                         disabled={this.state.creating}
-                         value={this.state.tokenId}
-                         onChange={(e) => this.handleChange('tokenId', e.target.value)}
-                  />
-                </div>
-                {this.state.tokenAlreadyExists && (
-                  <div>
-                    <small><b>Token Symbol already exists.</b></small>
-                  </div>
-                )}
-                <small>It'll be used to identify the token and to create an Account ID for the token <code>{this.state.tokenId ? (this.state.tokenId.toLowerCase() + '.' + ContractName) : ""}</code></small>
-              </div>
-
-              <div className="form-group">
-                <label forhtml="totalSupply">Total Supply</label>
-                <div className="input-group">
-                  <input type="number"
-                      className="form-control form-control-large"
-                      id="totalSupply"
-                      placeholder="1000000000"
-                      disabled={this.state.creating}
-                      value={this.state.totalSupply}
-                      onChange={(e) => this.handleChange('totalSupply', e.target.value)}
-                  />
-                </div>
-                <small>This is a total number of tokens to mint.</small>
-              </div>
-
-              <div className="form-group">
-                <label forhtml="tokenDecimals">Token Decimals</label>
-                <div className="input-group">
-                  <input type="number"
-                         className="form-control form-control-large"
-                         id="tokenDecimals"
-                         placeholder="18"
-                         disabled={this.state.creating}
-                         value={this.state.tokenDecimals}
-                         onChange={(e) => this.handleChange('tokenDecimals', e.target.value)}
-                  />
-                </div>
-                <small>Tokens operate on integer numbers. <code>1 / 10**{this.state.tokenDecimals}</code> is the smallest fractional value of the new token.</small>
-              </div>
-
-              <div className="form-group">
-                <label forhtml="tokenIcon">Token Icon</label>
-                <div className="input-group">
-                  <div>
-                    {this.state.tokenIconBase64 && (
-                      <img className="rounded token-icon" style={{marginRight: '1em'}} src={this.state.tokenIconBase64} alt="Token Icon"/>
-                    )}
-                  </div>
-                  <div>
-                    <Files
-                        id="tokenIcon"
-                        className='form-control form-control-large btn btn-outline-primary'
-                        onChange={(f) => this.onFilesChange(f)}
-                        onError={(e, f) => this.onFilesError(e, f)}
-                        multiple={false}
-                        accepts={['image/*']}
-                        minFileSize={1}
-                        clickable
-                    >
-                      Click to upload Token Icon
-                    </Files>
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label forhtml="ownerId">Owner Account ID</label>
-                <div className="input-group">
-                  <input type="text"
-                         className={this.ownerIdClass()}
-                         id="ownerId"
-                         placeholder={this.state.accountId}
-                         disabled={this.state.creating}
-                         value={this.state.ownerId}
-                         onChange={(e) => this.handleChange('ownerId', e.target.value)}
-                  />
-                </div>
-                {!this.state.accountExists && (
-                  <div>
-                    <small><b>Account doesn't exists.</b></small>
-                  </div>
-                )}
-                <small>This account will own the total supply of the newly created token</small>
-              </div>
-
-              <div className="form-group">
-                <div>
+              <div>
                   <button
                       className="btn btn-success"
-                      disabled={this.state.creating || !this.isValidTokenId(this.state.tokenId) || this.state.tokenLoading || this.state.tokenAlreadyExists}
-                      onClick={() => this.createToken()}>Create Token ({fromYocto(this.state.requiredDeposit)} Ⓝ)</button>
-                </div>
+                      onClick={ () => this.requestWhitelist(this.state.tokenId) }
+                  >
+                      Add <b>{ this.state.tokenId }</b> to your NEAR Wallet
+                  </button>
               </div>
-            </div>
-          ) : (
-            <div>
-              <button
-                className="btn btn-primary"
-                onClick={() => this.setState({expandCreateToken: true})}
-              >
-                Expand token creation form
-              </button>
-            </div>
-          )}
-          <hr/>
-        </div>
-    ) : (
-        <div>
-          <button
-              className="btn btn-primary background-color-blue"
-              onClick={() => this.requestSignIn()}>Log in with NEAR Wallet to create a new Token</button>
-        </div>
-    ));
-    const tokens = this.state.connected && (
-        <div>
-          <h3>Tokens</h3>
-          <Tokens
-              contract={this._contract}
-              lsKey={this.lsKey}
-              lsKeyCachedTokens={this.lsKeyCachedTokens}
-              accountId={this.state.accountId}
-              isSignedIn={ this.state.signedIn }
-          />
-        </div>
-    );
-    return (
-        <div>
-          <h1>Token Farm</h1>
-          <div style={{minHeight: "5em"}}>
-            {content}
           </div>
+      ) : (this.state.signedIn ? (
           <div>
-            {tokens}
+              <div className="float-right">
+                  <Button
+                      onClick={ () => this.logOut() }
+                      text={'Log out'}
+                  />
+              </div>
+              <h4>Hello, <span className="font-weight-bold">{ this.state.accountId }</span>!</h4>
+              { this.state.expandCreateToken ? (
+                  <div>
+                      <p>
+                          Issue a new token. It'll cost you <span className="font-weight-bold">{fromYocto(this.state.requiredDeposit)} Ⓝ</span>
+                      </p>
+                      <div className="form-group">
+                          <label forhtml="tokenName">Token Name</label>
+                          <div className="input-group">
+                              <input type="text"
+                                     className="form-control form-control-large"
+                                     id="tokenName"
+                                     placeholder="Epic Moon Rocket"
+                                     disabled={this.state.creating}
+                                     value={this.state.tokenName}
+                                     onChange={(e) => this.handleChange('tokenName', e.target.value)}
+                              />
+                          </div>
+                          <small>The token name may be used to display the token in the UI</small>
+                      </div>
+                      <div className="form-group">
+                          <label forhtml="tokenId">Token Symbol</label>
+                          <div className="input-group">
+                              <input type="text"
+                                     className={this.tokenIdClass()}
+                                     id="tokenId"
+                                     placeholder="MOON"
+                                     disabled={this.state.creating}
+                                     value={this.state.tokenId}
+                                    onChange={(e) => this.handleChange('tokenId', e.target.value)}
+                              />
+                          </div>
+                          { this.state.tokenAlreadyExists && (
+                              <div>
+                                  <small><b>Token Symbol already exists.</b></small>
+                              </div>
+                          )}
+                          <small>It'll be used to identify the token and to create an Account ID for the token <code>{this.state.tokenId ? (this.state.tokenId.toLowerCase() + '.' + ContractName) : ""}</code></small>
+                      </div>
+                      <div className="form-group">
+                          <label forhtml="totalSupply">Total Supply</label>
+                          <div className="input-group">
+                              <input type="number"
+                                     className="form-control form-control-large"
+                                     id="totalSupply"
+                                     placeholder="1000000000"
+                                     disabled={this.state.creating}
+                                     value={this.state.totalSupply}
+                                     onChange={ (e) => this.handleChange('totalSupply', e.target.value) }
+                              />
+                          </div>
+                          <small>This is a total number of tokens to mint.</small>
+                      </div>
+                      <div className="form-group">
+                          <label forhtml="tokenDecimals">Token Decimals</label>
+                          <div className="input-group">
+                              <input type="number"
+                                     className="form-control form-control-large"
+                                     id="tokenDecimals"
+                                     placeholder="18"
+                                     disabled={this.state.creating}
+                                     value={this.state.tokenDecimals}
+                                     onChange={(e) => this.handleChange('tokenDecimals', e.target.value)}
+                              />
+                          </div>
+                          <small>Tokens operate on integer numbers. <code>1 / 10**{this.state.tokenDecimals}</code> is the smallest fractional value of the new token.</small>
+                      </div>
+                      <div className="form-group">
+                          <label forhtml="tokenIcon">Token Icon</label>
+                          <div className="input-group">
+                              <div>
+                                  { this.state.tokenIconBase64 && (
+                                      <img className="rounded token-icon" style={{marginRight: '1em'}} src={this.state.tokenIconBase64} alt="Token Icon"/>
+                                      )}
+                              </div>
+                              <div>
+                                  <Files
+                                      id="tokenIcon"
+                                      className='form-control form-control-large btn btn-outline-primary'
+                                      onChange={(f) => this.onFilesChange(f)}
+                                      onError={(e, f) => this.onFilesError(e, f)}
+                                      multiple={ false }
+                                      accepts={['image/*']}
+                                      minFileSize={ 1 }
+                                      clickable
+                                  >
+                                      Click to upload Token Icon
+                                  </Files>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="form-group">
+                          <label forhtml="ownerId">Owner Account ID</label>
+                          <div className="input-group">
+                              <input type="text"
+                                     className={ this.ownerIdClass() }
+                                     id="ownerId"
+                                     placeholder={ this.state.accountId }
+                                     disabled={ this.state.creating }
+                                    value={ this.state.ownerId }
+                                     onChange={(e) => this.handleChange('ownerId', e.target.value)}
+                              />
+                          </div>
+                          { !this.state.accountExists && (
+                              <div>
+                                  <small><b>Account doesn't exists.</b></small>
+                              </div>
+                          )}
+                          <small>This account will own the total supply of the newly created token</small>
+                      </div>
+                      <div className="form-group">
+                          <div>
+                              <button
+                                  className="btn btn-success"
+                                  disabled={this.state.creating || !this.isValidTokenId(this.state.tokenId) || this.state.tokenLoading || this.state.tokenAlreadyExists}
+                                  onClick={() => this.createToken()}>Create Token ({fromYocto(this.state.requiredDeposit)} Ⓝ)</button>
+                          </div>
+                      </div>
+                  </div>
+              ) : (
+                  <div className='padding-10-0'>
+                      <Button
+                          text={'Expand token creation form'}
+                          onClick={ () => this.setState({ expandCreateToken: true }) }
+                      />
+                      {/* <button
+                      className="btn btn-primary background-color-blue"
+                      onClick={() => this.setState({expandCreateToken: true})}
+                    >
+                      Expand token creation form
+                    </button>*/}
+                  </div>
+            )}
+            <hr/>
           </div>
+      ) : (
+          <div className='padding-10-0'>
+          <Button
+              className="btn btn-primary background-color-blue"
+              text={'Log in with NEAR Wallet to create a new Token'}
+              onClick={ () => this.requestSignIn() } />
         </div>
-    );
+      ));
+      const tokens = this.state.connected && (
+          <div>
+            <h3>Tokens</h3>
+            <Tokens
+                contract={ this._contract }
+                lsKey={ this.lsKey }
+                lsKeyCachedTokens={ this.lsKeyCachedTokens }
+                accountId={ this.state.accountId }
+                isSignedIn={ this.state.signedIn }
+            />
+        </div>
+      );
+
+      return (
+          <div>
+              <AppProvider value={ this.state.isDarkMode }>
+                  <div className='flexSpaceBetween'>
+                      <h1>Token Farm</h1>
+                      <div className='flexCenter flexBasis5'>
+                          <Switcher
+                              name='dark-mode'
+                              onChange={ this.handleCheck }
+                              checked={ this.state.isDarkMode }
+                          />
+                      </div>
+                  </div>
+                  <div style={{ minHeight: "5em" }}>
+                      { content }
+                  </div>
+                  <div>
+                      { tokens }
+                  </div>
+              </AppProvider>
+        </div>
+      );
   }
 }
 
